@@ -78,8 +78,25 @@ namespace CrawlerForm
 			}
 		}
 
+		object gotoLock = new object();
+		bool _gotoStart = false;
+		public bool GotoStart
+		{
+			get
+			{
+				lock (gotoLock)
+					return _gotoStart;
+			}
+			set
+			{
+				lock (gotoLock)
+					_gotoStart = value;
+			}
+		}
+
 		void MainLoop(string orderbyString)
 		{
+		start:
 			try
 			{
 				File.AppendAllText("cache.dat", "");
@@ -119,7 +136,6 @@ namespace CrawlerForm
 				return;
 #endif
 			}
-
 
 			EnsureFolder("downloads");
 
@@ -173,6 +189,7 @@ namespace CrawlerForm
 												if (gotAge && age >= urlAgeDictionary[assetID_B64])
 												{
 													PrintToWindow("Skipped " + itemName);
+													GotoStart = (orderbyString == "latest");
 													goto end;
 												}
 											}
@@ -236,6 +253,12 @@ namespace CrawlerForm
 						while (ProcNum > 0)
 						{
 							Thread.Sleep(100);
+						}
+
+						if (GotoStart)
+						{
+							Thread.Sleep(300);
+							goto start;
 						}
 					}
 					catch (Exception ex)
